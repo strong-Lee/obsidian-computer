@@ -1,6 +1,6 @@
 以Web请求处理而言，python的生命周期长，进程启动后一直活着。内存碎片、垃圾回收的压力比PHP大。在处理高并发Web请求时，PHP8（配合Swoole或即便用php-fpm）通常比python（Gunicorn + Flask/Django）吞吐量更高，响应更快。
 
-为什么python更慢呢：
+为什么python更慢呢111：
 python代码的执行过程：
 	源码层（Source Code） 
 	-> 抽象语法树层（AST - Abstract Syntax Tree） Python 解释器在运行前，先扫描一遍你的代码，把它变成一个树状结构，确保语法没有错误。
