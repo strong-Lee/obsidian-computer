@@ -1,0 +1,197 @@
+{
+  "main": {
+    "id": "eed11913b7c3e3db",
+    "type": "split",
+    "children": [
+      {
+        "id": "fd65d95718173fa9",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "9d3fe845fc1ce74b",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "编程工具/php/Yii2 + GatewayWorker聊天室.md",
+                "mode": "source",
+                "source": false,
+                "backlinks": true,
+                "backlinkOpts": {
+                  "collapseAll": false,
+                  "extraContext": false,
+                  "sortOrder": "alphabetical",
+                  "showSearch": false,
+                  "searchQuery": "",
+                  "backlinkCollapsed": false,
+                  "unlinkedCollapsed": true
+                }
+              },
+              "icon": "lucide-file",
+              "title": "Yii2 + GatewayWorker聊天室"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "1578f223a1df807c",
+    "type": "mobile-drawer",
+    "children": [
+      {
+        "id": "f045107bf878d8b3",
+        "type": "leaf",
+        "state": {
+          "type": "file-explorer",
+          "state": {
+            "sortOrder": "alphabetical",
+            "autoReveal": false
+          },
+          "icon": "lucide-folder-closed",
+          "title": "Files"
+        }
+      },
+      {
+        "id": "b1c669a299009dd7",
+        "type": "leaf",
+        "state": {
+          "type": "search",
+          "state": {
+            "query": "",
+            "matchingCase": false,
+            "explainSearch": false,
+            "collapseAll": false,
+            "extraContext": false,
+            "sortOrder": "alphabetical"
+          },
+          "icon": "lucide-search",
+          "title": "Search"
+        }
+      },
+      {
+        "id": "aab08e46e7435ce4",
+        "type": "leaf",
+        "state": {
+          "type": "tag",
+          "state": {
+            "sortOrder": "frequency",
+            "useHierarchy": true,
+            "showSearch": false,
+            "searchQuery": ""
+          },
+          "icon": "lucide-tags",
+          "title": "Tags"
+        }
+      },
+      {
+        "id": "f971103ef40e1178",
+        "type": "leaf",
+        "state": {
+          "type": "bookmarks",
+          "state": {},
+          "icon": "lucide-bookmark",
+          "title": "Bookmarks"
+        }
+      },
+      {
+        "id": "4226176c84247b81",
+        "type": "leaf",
+        "state": {
+          "type": "all-properties",
+          "state": {
+            "sortOrder": "frequency",
+            "showSearch": false,
+            "searchQuery": ""
+          },
+          "icon": "lucide-archive",
+          "title": "All properties"
+        }
+      }
+    ],
+    "currentTab": 0
+  },
+  "right": {
+    "id": "c517cb82b402282d",
+    "type": "mobile-drawer",
+    "children": [
+      {
+        "id": "1af502ef2a8dfe91",
+        "type": "leaf",
+        "state": {
+          "type": "backlink",
+          "state": {
+            "file": "编程工具/第一部分：奠定基石 —— 环境与工具安装.md",
+            "collapseAll": false,
+            "extraContext": false,
+            "sortOrder": "alphabetical",
+            "showSearch": false,
+            "searchQuery": "",
+            "backlinkCollapsed": false,
+            "unlinkedCollapsed": true
+          },
+          "icon": "links-coming-in",
+          "title": "Backlinks"
+        }
+      },
+      {
+        "id": "787f1d5b0e59161d",
+        "type": "leaf",
+        "state": {
+          "type": "outgoing-link",
+          "state": {
+            "file": "Untitled.md",
+            "linksCollapsed": false,
+            "unlinkedCollapsed": true
+          },
+          "icon": "links-going-out",
+          "title": "Outgoing links"
+        }
+      },
+      {
+        "id": "ffa7ec8cdf4e56ca",
+        "type": "leaf",
+        "state": {
+          "type": "outline",
+          "state": {
+            "file": "Untitled.md",
+            "followCursor": false,
+            "showSearch": false,
+            "searchQuery": ""
+          },
+          "icon": "lucide-list",
+          "title": "Outline"
+        }
+      }
+    ],
+    "currentTab": 0
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "markdown-importer:Open format converter": false,
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false
+    }
+  },
+  "active": "9d3fe845fc1ce74b",
+  "lastOpenFiles": [
+    "公司文档/政策和行业支持.md",
+    "编程工具/终极 LazyVim for PHP 开发者指南.md",
+    "编程工具/第一部分：奠定基石 —— 环境与工具安装.md",
+    "Untitled.md",
+    "编程工具.md",
+    "高效编写技术教程 (The Workflow).md",
+    "编程工具/第五部分：实战演练 —— 从零搭建 Hyperf 项目.md",
+    "编程工具/第三部分：PHP 生态深度集成 —— 打造专属工作利器.md",
+    "编程工具/_index.md",
+    "编程工具/第二部分：灵魂注入 —— LazyVim 核心安装与初体验.md",
+    "编程工具/第四部分：注入 AI 灵魂 —— 免费的 \"Cursor\" 体验.md",
+    "编程工具/第六部分：总结与展望.md",
+    "编程工具"
+  ]
+}

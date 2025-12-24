@@ -1,0 +1,5 @@
+/* 让代码块中的注释变为灰色并倾斜，增强可读性 */
+.markdown-source-view.mod-cm6 .cm-comment {
+  color: #999999; /* 一个舒适的灰色 */
+  font-style: italic;
+}
