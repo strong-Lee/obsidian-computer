@@ -52,55 +52,66 @@
 
 #### 2. 针对字典 (Dict) —— 最复杂、最核心
 
-请涵盖以下核心问题：
-1. 哈希表结构与演变 (Hash Table Internals)：
-   - 请对比 Python 3.6 之前（稀疏数组）和 3.6 之后（紧凑字典 / Compact Dict）的内存布局差异。解释 `dk_indices` 和 `dk_entries` 两个数组是如何配合的？
-   - 这种改变如何提升了内存利用率和 CPU 缓存命中率（Cache Locality）？
+请以 Dict 为例，从源码和内存视角进行讲解，必须涵盖以下核心模块：
+1. 内存模型与演变 (Memory & Evolution) 
+	- **设计哲学对比 (PHP Array vs Python Dict)**： 
+	- **核心差异**：PHP 的数组底层使用 **Bucket + 双向链表**（拉链法）来解决哈希冲突，保证插入顺序。 
+	- Python 旧版 Dict (3.6前) 是稀疏的，浪费内存；而 Python 3.6+ 引入了 **“紧凑字典” (Compact Dict)**。 
+	- 请画图对比：PHP 的 Bucket 链表结构 vs Python 的 **Indices 数组 + Entries 数组** 分离结构。解释为什么 Python 的新结构能节省 20%-30% 的内存且天然有序？ 
+	- **C 结构体解剖**：解释 `PyDictObject` 中的 `dk_indices`（索引层）和 `dk_entries`（数据层）是如何配合工作的。 
 
-2. 哈希冲突与探查 (Collision Resolution)：
-   - 既然 Python 不使用“拉链法”（Chaining），请详细解释它是如何使用“开放寻址法”（Open Addressing）的？
-   - 解释“扰动策略”（Perturbation Shift）是如何防止哈希碰撞聚集的？
-   - 什么是“哈希攻击”（Hash DoS），以及 Python 的 SipHash 算法是如何防御的？
+2. 哈希冲突与探查机制 (Collision & Probing) 
+	- **解决冲突的流派**： 
+	- PHP 使用 **拉链法 (Chaining)**：冲突了就挂个链表。 
+	- Python 使用 **开放寻址法 (Open Addressing)**：冲突了就去找下一个空位。 
+	- **重点解释**：为什么 Python 选择开放寻址？（提示：CPU 缓存友好性）。 
+	- **扰动策略 (Perturbation)**：当发生碰撞时，Python 不是简单地 `+1` 找下一个格子，而是有一个位运算的扰动公式。请简述其原理，并解释这是为了防止什么？（如：特定模式的数据攻击）。 
 
-3. 扩容与负载因子 (Resizing & Load Factor)：
-   - Dict 的负载因子（Load Factor）阈值是多少？（是 2/3 吗？）
-   - 扩容时发生了什么？为什么 Dict 的扩容成本比 List 更高（涉及到 Rehash）？
+3. 动态扩容与 Rehash (Resizing & Rehash) 
+	- **负载因子 (Load Factor)**：PHP 数组通常满了才扩，Python Dict 的阈值是多少（是 2/3 吗）？ 
+	- **昂贵的代价**：解释为什么 List 扩容只是搬运指针 (`memcpy`)，而 Dict 扩容必须 **Rehash**（重新计算所有 Key 的哈希值并重新落座）？ 
+	- **性能陷阱**：演示一段代码，通过循环向字典写入大量数据，解释为什么在特定节点速度会突然变慢？ 
 
-4. 键的限制与对象 (Key Constraints)：
-   - 从底层解释为什么 List 不能做 Key，而 Tuple 可以？（涉及 `__hash__` 和 `__eq__` 的底层协议）。
-   - 解释 `1` 和 `1.0` 为什么在字典里被视为同一个 Key？
+4. Key 的限制与底层协议 (Key Constraints) 
+	- **不可变性之谜**：PHP 的 Key 只能是 Int 或 String。Python 的 Key 可以是任何“可哈希”对象。 
+	- **底层协议**：解释 `__hash__` 和 `__eq__` 是如何配合的？ 
+	- 为什么 `1` 和 `1.0` 是不同的类型，但在字典里却是同一个 Key？（从内存到底是比地址还是比 Hash 值的角度解释）。 
+	- **List 为何不能做 Key？**：从 C 源码角度解释，List 缺失了哪个函数指针导致它无法被哈希？
 
 #### 3. 针对元组 (Tuple) —— 看似简单，实则有缓存黑科技
-请涵盖以下核心问题：
-1. 内存模型与不可变性 (Memory & Immutability)：
-   - 用 C 结构体 `PyTupleObject` 解释它和 `PyListObject` 的区别（为什么 Tuple 更加轻量？少了哪些字段？）。
-   - 为什么说 Tuple 是“结构上不可变”，但“内容可变”？请用内存指针图解 `t = ([],)` 的例子。
-
-2. 性能压榨与资源缓存 (Free List & Optimization)：
-   - 重点讲解 CPython 对 Tuple 的**“空闲列表缓存”（Free List）**机制。为什么创建小元组比创建小列表快得多？
-   - 解释 Python 编译器的“常量折叠”（Constant Folding）优化（为什么 `(1, 2)` 在字节码编译阶段就被计算出来了）。
-
-3. 哈希与应用 (Hashing)：
-   - Tuple 的 Hash 值是如何计算的？（解释 XOR 运算与乘法结合的算法）。
-   - 为什么包含列表的 Tuple 不能被哈希？
-
-4. 替代方案对比：
-   - 从内存开销和访问速度上，对比 `Tuple` vs `List` vs `NamedTuple` vs `Custom Class` (`__slots__`)。
+请以 Tuple 为例，从源码和内存视角进行讲解，必须涵盖以下核心模块：
+1. 内存模型与轻量化 (Memory & Structure) 
+	- **结构体对比 (List vs Tuple)**： 
+	- 画出 `PyTupleObject` 与 `PyListObject` 的 C 结构体对比图。 
+	- **关键差异**：指出 Tuple 少了 `allocated` 字段。为什么它不需要“预留空间”？这如何让它在内存上比 List 更紧凑？
+	- **不可变性的真相**： - 解释“结构不可变”与“内容可变”。 
+	- **内存图解**：定义 `t = ([],)`。修改列表内容时，Tuple 内部的指针发生了变化吗？请画出 [Tuple头] -> [指针] -> [List对象] 的指向图。 
+2. 性能压榨：Free List 缓存机制 (The Free List Optimization) 
+	- **PHP 没有的黑科技**：PHP unset 数组后内存通常归还给内存池。 
+	- **Python 的贪婪**：解释 CPython 专门为 Tuple 设计的 **Free List**（空闲链表）。 
+	- **实战验证**：当你 `del` 一个小元组时，内存真的还给操作系统了吗？还是被 Python 偷偷藏起来了？（这解释了为什么创建小元组比创建小列表快几十倍）。 
+	
+3. 编译器优化 (Compiler Optimizations) 
+	- **常量折叠 (Constant Folding)**： 
+	- 比较 `a = [1, 2]` 和 `b = (1, 2)` 的字节码（`dis` 模块）。 
+	- 解释为什么元组可以在编译阶段就被计算出来并在内存中生成（LOAD_CONST），而列表必须在运行时构建（BUILD_LIST）？ 
+	
+4. 哈希算法 (Hashing Strategy) 
+- **元组的 Hash**：Tuple 可以做字典的 Key。它是怎么算 Hash 的？是把里面所有元素的 Hash 加起来吗？（解释异或与乘法结合的算法，保证顺序不同 Hash 不同）。
 
 #### 4. 针对集合 (Set) —— 字典的孪生兄弟
-请涵盖以下核心问题：
-1. 内存模型 (Internals)：
-   - 解释 Set 的底层结构（`PySetEntry`）。它本质上是不是一个“只有 Key 没有 Value”的字典？
-   - Set 在内存布局上相比 Dict 做了哪些特定的精简？
-
-2. 集合运算与 CPU 效率 (Set Operations)：
-   - 解释交集（&）、并集（|）、差集（-）在底层是如何实现的？
-   - 为什么在大数据量下，Set 的运算速度远超 List 的循环判断？（涉及时间复杂度 O(1) vs O(n)）。
-   - 是否有类似 SIMD 的位运算优化思想在里面？
-
-3. 扩容与稀疏性：
-   - Set 作为哈希表，它的稀疏性如何影响内存占用？
-   - 为什么有时候把 List 转为 Set 再转回 List，顺序会乱掉？（解释哈希随机性）。
-
-4. 变体与限制：
-   - 解释 `frozenset`（不可变集合）的底层意义，为什么它可以作为字典的 Key？
+请以 Set 为例，从源码和内存视角进行讲解，必须涵盖以下核心模块：
+1. 内存模型 (Internals) 
+	- **本质**：解释 Set 在 CPython 底层是不是一个“只有 Key，Value 为 Null”的特殊字典？(`PySetEntry`)。 
+	- **对比 PHP**：PHP 做去重通常用 `array_unique` (新建数组) 或 `array_flip` (键值互换)。Python Set 在内存结构上专门做了哪些精简？ 
+2. 集合运算的 CPU 视角 (Set Operations) 
+	- **算法复杂度**： 
+	- 解释为什么 `list_a` 与 `list_b` 求交集是 O(N*M)，而 `set_a` 与 `set_b` 是 O(min(len(a), len(b)))？ 
+	- **位运算思维**：虽然底层不是简单的位图（Bitmask），但逻辑上是如何快速判断存在的？ 
+	- **应用场景**：在大数据量下（如 100 万个 ID 去重），Set 相比 List 的性能提升大概是多少数量级？ 
+3. 稀疏性与随机性 (Sparsity & Randomness) 
+	- **内存黑洞**：Set 为了保证 O(1) 查询，必须保持稀疏（有大量空桶）。解释为什么存同样的数据，Set 往往比 List 占用更多内存？ 
+	- **顺序丢失**：解释为什么 `list(set([1, 2, 3]))` 出来的顺序可能乱掉？（关联到 Hash 值与内存地址的关系，以及哈希随机化种子）。 
+4. 特殊变体：Frozenset 
+- **存在的意义**：为什么需要一个“不可变的集合”？ 
+- **底层实现**：它和 Set 共享同一套 C 代码吗？它能作为字典 Key 的原理是什么？
