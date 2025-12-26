@@ -112,12 +112,28 @@ l = [1, 2, 3] (Small Int)
 l = [1, 1, 1] # 三个元素指向同一个内存地址 
 print(id(l[0]) == id(l[1])) # True
 
-# 9. 紧凑型数组-去指针化：存储 C 语言原生的 int，而不是 PyObject 指针。省去 2/3 以上内存，且对 CPU 缓存友好。
-array.array('i', [1,2])
-# 10. 避免多态-类型推断缺失：List 可存不同类型，导致 CPU 分支预测失效。同质数据请用 NumPy。
-map(func, nums)
-# 11. 自定义排序-兼容旧代码：将老式的 cmp(a, b) 函数转换为 key 函数，利用了类包装器。
-cmp_to_key
-# 12. 列表去重-保留顺序：利用 Python 3.7+ 字典有序的特性去重，比 list(set(nums)) (无序) 更稳健。
-list(dict.fromkeys(nums))
+# 9. 紧凑型数组-去指针化：如果列表只存数字，使用 array 模块存储 C 语言原生的 int/float，而非 PyObject 指针。内存占用可减少 2/3 以上。且对 CPU 缓存友好。
+import array
+array.array('i', [1,2]) # 'i' 代表 signed int
+
+# 10. 避免多态开销-性能陷阱：List 可存任意类型，导致 CPU 无法进行向量化优化，且每次读取都要检查类型。处理大量同质数据（如矩阵运算），请务必使用 NumPy。
+# Python List: 慢，逐个对象解包检查类型 
+l = [1, 2.0, "3"] 
+# NumPy Array: 快，内存连续，类型统一 
+import numpy as np 
+arr = np.array([1, 2, 3], dtype=int)
+
+# 11. 自定义排序-兼容旧代码：将老式的 cmp(a, b) 函数转换为 key 函数，利用了类包装器。如果需要复杂的比较逻辑（如：A 比 B 大返回 1），可用 functools.cmp_to_key 将比较函数转为 key 函数。
+from functools import cmp_to_key
+# 自定义比较：按绝对值大小倒序
+def my_cmp(a, b):
+    return abs(b) - abs(a)
+
+nums = [1, -5, 3]
+nums.sort(key=cmp_to_key(my_cmp)) # [-5, 3, 1]
+
+# 12. 列表去重-保留顺序：利用 Python 3.7+ 字典有序的特性去重，比 list(set(nums)) (无序) 更稳健，保留插入顺序。
+nums = [3, 1, 2, 1, 3]
+unique = list(dict.fromkeys(nums)) # [3, 1, 2]
+unique_set = list(set(nums))       # [1, 2, 3] (顺序不确定)
 ```
