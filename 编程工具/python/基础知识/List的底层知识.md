@@ -10,17 +10,23 @@ python代码的执行过程：
     - 当你执行 $a[0] = 'x'; $a[1000] = 'y'; 时，PHP 只是在哈希表里开了两个 Bucket。中间的 1~999 根本不存在。这是**稀疏**的。
     - 代价：每次访问 $a[i]，PHP 都要对 i 进行哈希运算，处理哈希冲突，找到 Bucket，再拿出数据。这比直接内存访问慢得多。
         
-- **Python List**：它是**紧凑的线性表**。
+- **Python List**：它是**Continuous Array of Pointers**（连续指针数组）。
     - 它在内存中是一块**连续**的区域。如果你想存 l[1000]，你必须先填满 l[0] 到 l[999]。
     - 优势：CPU 最喜欢连续内存（详见后文缓存部分）。
     - 劣势：不能像 PHP 那样当 Map 用。
-	
+
+	**为什么？**  
+	Python List 追求极致的 **Random Access（随机访问）** 速度。
+
+- **PHP**: 访问 arr[i] 需要：Hash(i) -> Bucket -> 遍历冲突链表 -> 找到值。虽然是 O(1)，但系数很大。
+    
+- **Python**: 访问 list[i] 需要：基地址 + i * 指针大小。这是 CPU 指令级别的直接内存寻址，极快。
 - **C 结构体解剖：PyListObject**
-	在 CPython 源码（Include/listobject.h）中，List 的长相大概是这样的：
+	在 CPython 源码（Include/listobject.h）中，List 的长相大致如下（简化版）：
 	```c
 	typedef struct {
-    PyObject_VAR_HEAD // 1. 公共头部（包含引用计数、类型标记、当前元素个数 ob_size）
-    PyObject **ob_item; // 2. 核心！指向指针数组的指针 (char** 类似的二级指针)
+    PyObject_VAR_HEAD // 1. 公共头部：包含引用计数、类型标记、当前元素个数（ob_size）
+    PyObject **ob_item; // 2. 核心：指向指针数组的指针 (char** 类似的二级指针)
     Py_ssize_t allocated;  // 3. 当前申请的总容量（Capacity），通常 >= ob_size
 	} PyListObject;
 	```
@@ -42,6 +48,34 @@ python代码的执行过程：
                          +--- [2] -> 0xFC20 (指向另一个 List)
                          |
                          +--- [3] -> NULL (预留空间，垃圾值)
+                                             
+```
+
+```text
+栈 (Stack)            堆 (Heap)
++---------+          +-----------------------+
+| my_list | -------> | PyListObject (结构体) |
++---------+          |-----------------------|
+                     | ob_refcnt: 1          | (引用计数)
+                     | ob_type: ListType     |
+                     | ob_size: 2            | (当前有2个元素)
+                     | allocated: 4          | (底层申请了4个位置，冗余)
+                     | ob_item ------------------+
+                     +-----------------------+   |
+                                                 | (指向指针数组)
+                                                 v
+                                     +---------------------------+
+                                     | ptr[0] | ptr[1] | ptr[2] | ptr[3] |
+                                     +---|--------|--------|--------|----+
+                                         |        |      (未使用) (未使用)
+                                         |        |
+                  +----------------------+        +---------------------+
+                  |                                                     |
+                  v                                                     v
+          +--------------+                                      +----------------+
+          | PyLongObject |                                      | PyUnicodeObject|
+          | val: 100     |                                      | val: "hello"   |
+          +--------------+                                      +----------------+
 ```
 
 **多态的代价 (Boxed Objects) —— 三级跳跃**
