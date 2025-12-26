@@ -1,3 +1,4 @@
+Python 的 List（列表）是**真正的数组**（类似于 C++ 的 std::vector 或 Java 的 ArrayList）。它是一块**连续的内存区域**。它是一支纪律严明的军队，而不是 PHP 那种散漫的雇佣兵（哈希表）。
 
 python代码的执行过程：
 	源码层（Source Code） 
