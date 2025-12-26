@@ -1,7 +1,30 @@
 
 ```python
 
-1. 拼接陷阱-内存分配：
+1. 拼接的底层真相 - 垃圾回收之痛
+# 场景：合并两个列表。 
+a = [1, 2]; b = [3, 4] 
+c = a + b # 糟糕代码
+a += b # 或者 a.extend(b) 优秀代码
+# 🔍 源码级深度剖析 (Deep Dive):
+# 1. [动作描述 - a + b]: 
+# 创建一个全新的列表 c。 
+# [内存动作]: Malloc(len(a)+len(b)) -> Memcpy(a) -> Memcpy(b) -> Return c。 
+# 代价: 产生了一个新对象，旧数据如果没用还得 GC。O(N+M)。 
+# 
+# 2. [动作描述 - a += b]: 
+# 这是 "In-place" (原地) 操作。 
+# [内存动作]: 
+# Step A: 检查 a.allocated 是否足够。 
+# Step B (Nice path): 够用，直接把 b 的指针 memcpy 到 a 的尾部。无 Malloc！ 
+# Step C (Bad path): 不够，realloc a 的内存块（可能原地扩展），然后 memcpy b。 
+# 代价: 省去了一次 a 的数据搬运（在 Nice path 下）。O(M)。
+# 💡 面试官视角 (Interview Corner):
+# 问题：“`a = a + b` 和 `a += b` 有区别吗？” 
+# 回答：“区别巨大！前者生成新对象，后者尝试原地修改。 
+# 此外，如果 a 被其他变量引用（如 x = a），`a += b` 会导致 x 也变了，而 `a = a + b` 不会改变 x。这是引用陷阱。”
+
+
 # a + b：新建。Malloc 一块 len(a)+len(b) 的新内存，复制 a，再复制 b。O(M+N)。
 # a += b (即 extend)：扩容。在 a 的原内存上 realloc（如果够大甚至不用动），直接把 b 的数据拷在后面。省去了一次大内存分配和 a 的复制。
 # 动作：Malloc 一块 len(a)+len(b) 的新内存，复制 a，再复制 b。 
