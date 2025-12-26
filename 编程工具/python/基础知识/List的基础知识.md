@@ -1,3 +1,5 @@
+## 1. 基础常用
+
 ```python
 # 1. 快速构建：内存初始化，Python 会申请一块能装100个指针的内存，并将它们都指向同一个整数对象 0 的地址（引用拷贝）。O(n)。
 nums = [0] * 100
@@ -27,18 +29,31 @@ nums.clear()
 
 ## 2. 进阶高级
 
-[](https://github.com/strong-Lee/obsidian-computer/blob/main/%E7%BC%96%E7%A8%8B%E5%B7%A5%E5%85%B7/python/%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/list.md#2-%E8%BF%9B%E9%98%B6%E9%AB%98%E7%BA%A7)
+```python
+# 13. 推导式: 字节码优化，比 for 循环快，因为是在 C 语言层面循环构建列表，减少了 Python 虚拟机栈帧的开销。
+[x*2 for x in nums]
+[x for x in nums if x > 0]    # 结合了 filter 和 map 功能，高度优化的构建过程。
+[x**2 for x in range(10) if x % 2 == 0]
+# 14. 解包：协议，利用迭代器协议，自动切分列表。底层进行了多次切片操作。
+first, *mid, last = nums
+# 15. 带索引遍历-代器：生成一个元组流 (index, value)，避免了手动维护计数器 i += 1。
+for i, v in enumerate(nums):
+# 16. 并行迭代-惰性求值：zip返回迭代器，按需从两个列表中取值，内存友好的O(1)空间复杂度。
+for a, b in zip(list1, list2):
+# 17. 二维转一维-反模式：虽然能把二维数组铺平，但会产生大量临时中间列表，产生 O(n²) 复杂度。慎用。
+for a, b in zip(list1, list2):
+```
 
-1. **列表推导式：** [x**2 for x in range(10) if x % 2 == 0]。
-2. **带索引遍历：** for i, v in enumerate(lst):。
-3. **同时遍历多个列表：** for x, y in zip(list1, list2):。
-4. **解包赋值：** first, *middle, last = lst (获取首尾，中间打包)。
-5. **自定义排序键：** lst.sort(key=lambda x: len(str(x))) 按长度排序。
-6. **原地切片赋值：** lst[1:3] = [10, 20, 30] 替换并改变长度。
-7. **filter与map：** 配合 lambda 进行函数式编程。
-8. **any() 和 all()：** if any(x > 10 for x in lst): 检查条件。
-9. **二维列表转一维：** sum(nested_list, []) (仅限小列表，慢) 或 [item for sublist in nested in sublist]。
-10. **bisect 模块：** 在有序列表中进行二分查找插入 bisect.insort(lst, x)。
+
+1. **带索引遍历：** for i, v in enumerate(lst):。
+
+
+3. **自定义排序键：** lst.sort(key=lambda x: len(str(x))) 按长度排序。
+4. **原地切片赋值：** lst[1:3] = [10, 20, 30] 替换并改变长度。
+5. **filter与map：** 配合 lambda 进行函数式编程。
+6. **any() 和 all()：** if any(x > 10 for x in lst): 检查条件。
+7. **二维列表转一维：** sum(nested_list, []) (仅限小列表，慢) 或 [item for sublist in nested in sublist]。
+8. **bisect 模块：** 在有序列表中进行二分查找插入 bisect.insort(lst, x)。
 
 ## 3. 黑客技巧
 
