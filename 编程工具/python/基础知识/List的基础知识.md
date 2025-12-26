@@ -60,21 +60,58 @@ l = [[]] * 3
 ```python
 
 # 1. 预分配-避免扩容：如果你知道长度，先占位。避免 append 触发多次 realloc（扩容）。
-l = [None] * 1000
-# 2. 引用计数-GC：查看有多少变量指向这个列表。注意调用该函数本身也会让计数 +1。
-sys.getrefcount(nums)
-# 3. 真实大小-元数据：只计算 List 结构体 + 指针数组的大小，不包含元素对象本身的大小。
+l = [None] * N
+nums = []; for i in range(10000): nums.append(i); # 慢，触发多次扩容
+nums = [None] * 10000; for i in range(10000): nums[i] = i; # 快，一次性分配
+
+# 2. 引用计数-GC：查看有多少变量引用这个列表。这是python垃圾回收（GC）的基础。注意调用该函数时，参数本身作为临时引用，计数通常会比预想多 1。
+# sys.getrefcount(nums)
+import sys 
+a = [1, 2] 
+b = a 
+print(sys.getrefcount(a)) # 输出 3 (a, b, 加上 getrefcount 的参数)
+
+# 3. 浅层大小-元数据：只计算 List 结构体 + 指针数组的内存占用，不包含元素对象本身的大小。列表存的只是“引用的指针”（通常 8 字节/个）。
 sys.getsizeof(nums)
-# 4. 内存地址-指针：返回对象的内存地址。验证 nums[0] is nums[1] 是否为真。
+import sys 
+l = ["a" * 1000] # 列表本身很小（只存了指针），但实际字符串占用内存很大 
+print(sys.getsizeof(l)) # ~72 bytes (列表壳子)
+
+# 4. 内存地址-指针验证：返回对象的内存地址。常用于判断两个变量是否指向同一个对象（即 is 判断的原理）。
 id(nums[0])
-# 5. 替换内核-原地更新：保持 nums 的内存地址不变（对象 ID 不变），但替换全部内容。这对外部引用了 nums 的变量有副作用。
+a = [1, 2] 
+b = a 
+print(id(a) == id(b)) # True，说明是同一个对象 
+print(a is b) # True
+
+# 5. 全量替换-原地更新：极重要技巧。保持列表对象的内存地址（ID）不变，但替换其所有内容。常用于函数内部修改外部列表（如 LeetCode 题目）
 nums[:] = new_nums
-# 6. 扩容监测-分配策略：观察 append 时大小的跳跃式增长（如 32字节 -> 64字节 -> 96字节...）。
+def modify(nums): 
+	# nums = [1, 2] # 错误：这只是让 nums 变量指向了新列表，外部变量不受影响
+	nums[:] = [1, 2] # 正确：在原内存地址上修改数据 
+a = [0, 0] 
+modify(a) 
+print(a) # [1, 2]
+
+# 6. 扩容策略-分配策略：Python 列表使用了超额分配（Over-allocation）策略来保证O(1)的追加性能。扩容系数约为 1.125 倍（加上少量常数）。
+# 观察 大小的跳跃：32-> 64 -> 96...(字节数视 Python 版本而定)
+import sys 
+l = [] 
+for i in range(5): 
+	l.append(i) 
+	print(len(l), sys.getsizeof(l))
 nums.__sizeof__()
-# 7. 线程安全-GIL 保护：CPython 中，单一字节码操作（如 append）是原子的，线程安全。但 l[i] = l[j] + 1 不是。
+
+# 7. 线程安全-GIL机制：CPython 中，单一字节码操作（如 append）是原子的，线程安全的。但 l[i] = l[j] + 1 涉及读写两步，非线程安全不是。
 append, pop
-# 8. 缓存利用-对象池：-5 到 256 的整数是单例。List 存的是这些全局单例的指针，不需要创建新整数对象。
+L.append(x)   # 安全 
+L[0] += 1     # 不安全 (多线程下需要 Lock) 
+
+# 8. 小整数缓存-对象池：范围 -5 到 256 的整数是全局唯一单例。List 存的是这些全局单例的指针，不会重复创建对象，节省内存。
 l = [1, 2, 3] (Small Int)
+l = [1, 1, 1] # 三个元素指向同一个内存地址 
+print(id(l[0]) == id(l[1])) # True
+
 # 9. 紧凑型数组-去指针化：存储 C 语言原生的 int，而不是 PyObject 指针。省去 2/3 以上内存，且对 CPU 缓存友好。
 array.array('i', [1,2])
 # 10. 避免多态-类型推断缺失：List 可存不同类型，导致 CPU 分支预测失效。同质数据请用 NumPy。
