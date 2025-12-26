@@ -15,7 +15,12 @@ if not nums:
 # 4. 插入-性能杀手：这在 Python 中是`大忌`。因为内存连续，插入头部意味着后面 N 个元素都要向后 memmove（移动）。O(n)。对比 PHP 链表插入是 O(1)。
 # 极慢 O(N)
 nums.insert(0, val) 
-# 极快 O(1) - 如果需要频繁头插，请用 deque 
+# 极快 O(1) - 如果需要频繁头插，请用 deque, 是一个双向链表，但每个节点存的不是一个元素，而是一个由指针组成的数组（Block）。C语言类比：
+# struct block { 
+#	 PyObject *items[64]; 
+#    struct block *left; 
+#    struct block *right; 
+# }。 
 from collections import deque 
 q = deque(nums); q.appendleft(val)
 
@@ -47,7 +52,7 @@ del nums[::2] # 删除索引 0, 2, 4 -> 结果 [2, 4, 6]
 # a + b：新建。Malloc 一块 len(a)+len(b) 的新内存，复制 a，再复制 b。O(M+N)。
 # a += b (即 extend)：扩容。在 a 的原内存上 realloc（如果够大甚至不用动），直接把 b 的数据拷在后面。省去了一次大内存分配和 a 的复制。
 c = a + b  # 慢，产生垃圾对象
-a += b     # 快，原地修改, 等价于a.extend(b)
+a += b     # 快，原地修改, 等价于a.extend(b) 操作：它检查 a 屁股后面有没有空闲内存。有：直接把b的数据拷贝进去。没有：申请一块更大的新地盘，把a搬过去，再把b拷进去。
 
 # 11. 引用陷阱-经典bug：创建了包含三个指向同一个空列表指针的列表。改一个全变。
 l = [[]] * 3
@@ -55,13 +60,12 @@ l[0].append(1)
 print(l) # [[1], [1], [1]] -> 灾难现场 
 l = [[] for _ in range(3)] # 正确写法 
 
-
-
-# 10. 排序-Timsort：Python 的默认排序算法，稳定且对部分有序数据极快。原地修改，不费额外内存。
+# 12. 排序-Timsort：Python 的默认排序算法，稳定且对部分有序数据极快。原地修改，不费额外内存。
 nums.sort()
-# 11. 存在性检查-遍历：线性查找，O(n)。不像 PHP 检查 Key 是 O(1)，这里必须挨个比对。
-if x in nums:
 
+# 13. 存在性检查-遍历：list是线性查找，O(n)。不像 PHP 检查 Key 是 O(1)，这里必须挨个比对。Set/Dict 是哈希查找 O(1)。数据量大时，请转为 set 再查。
+if x in nums: # O(N) 慢
+if x in set(nums): # O(1) 快（但转换本身有开销）
 ```
 ## 2. 进阶高级
 
@@ -85,9 +89,20 @@ names = ['A', 'B']; scores = [90, 80]
 for n, s in zip(names, scores):
     print(n, s)
         
-# 5. 扁平化反模式-性能陷阱：这是之前提到 sum 的反面教材。虽然能把二维数组铺平，但因为它每次相加都创建新列表，复杂度是 O(N²)。慎用。
+# 5. 扁平化-性能对比：sum 是反面教材 O(N²)。itertools.chain 是标准答案，零内存拷贝，O(N)。
+# zip：是拉链。把 [1,2]和[3,4]的第一位扣在一起，第二位扣在一起。用于并行迭代或转置。
+# chain：是锁链。把 [3,4] 接在 [1,2] 后面。用于扁平化。
+# sum(l, [])：是灾难。它相当于 (list1 + list2) + list3。每加一次，都要创建新列表并复制之前所有数据。O(N²)。
+# chain 的原理是迭代器，它不创建新列表，只是像指针一样，“读完A表指B表”，内存 O(1)，速度极快。
 flat = sum([[1], [2], [3]], [])  # 极慢：1+2, (1+2)+3, (1+2+3)+4...
-# 快：使用 itertools.chain
+
+matrix = [[1, 2], [3, 4], [5, 6]]
+flat = sum(matrix, []) # 极慢
+# 极快 (返回迭代器，转 list 需强转) 
+import itertools 
+flat_iter = itertools.chain.from_iterable(matrix) 
+flat_list = list(flat_iter)
+
 
 # 6. 字符串拼接-一次性分配：绝对不要用 += 拼接字符串。join 会先计算所有字符串的总长度，一次性 malloc 内存，然后逐个 memcpy。效率是天壤之别。
 # 每次 += 都创建新字符串对象 
@@ -114,6 +129,10 @@ q.popleft() # O(1) 极快
 # vs
 l = [1, 2, 3]
 l.pop(0)    # O(N) 很慢，慎用
+
+# 13. 词频统计-神器：底层是 C 实现的哈希计数，比手写 dict 循环快且优雅。
+from collections import Counter nums = [1, 1, 2, 3, 1] counts = Counter(nums) # Counter({1: 3, 2: 1, 3: 1}) 
+top_k = counts.most_common(2) # 获取出现频率最高的2个
 ```
 ## 3. 黑客技巧
 
@@ -211,4 +230,6 @@ scores = [60, 70, 80, 90]
 # 查找 75 应该插入的位置，并插入
 bisect.insort(scores, 75) 
 print(scores) # [60, 70, 75, 80, 90]
+
+#如果生产环境允许，我首选 bisect 模块，因为它是 C 实现的二分查找，速度最快且不易出错。如果不能用模块，我会手写 binary search 找到 index（O(logN)），然后用 list.insert 插入。但我会向面试官说明，虽然查找快，但 insert 依然会导致内存移动（O(N)），如果是海量数据且频繁插入，我会考虑换数据结构（如平衡树或跳表）。
 ```
