@@ -1,4 +1,4 @@
-#### 5. ⚡ 极速：索引访问 (Indexing)
+#### 1. ⚡ 极速：索引访问 (Indexing)
 
 **场景**：获取第 i 个元素。
 ```python
@@ -23,7 +23,7 @@ val = data[idx]  # 结果 'd'
 #    - 比 PHP 的 `$arr[3]` 快很多，因为 PHP 即使是数字索引，底层可能还是走的 Hash 逻辑（取决于是否那是 packed array）。
 ```
 
-#### 6. 🔰 基础：负数索引 (Negative Indexing)
+#### 2. 🔰 基础：负数索引 (Negative Indexing)
 
 **场景**：获取倒数第一个元素。  
 **PHP思维**：$arr[count($arr) - 1] 或者 end($arr)。PHP 的 $arr[-1] 是查找 key 为 -1 的元素，而不是倒数！
@@ -45,7 +45,7 @@ last = data[-1]
 #    - 依然是严格的 O(1)。
 ```
 
-#### 7. 🐢 较慢：切片读取 (Slicing)
+#### 3. 🐢 较慢：切片读取 (Slicing)
 
 **场景**：获取前 3 个元素。  
 **PHP思维**：array_slice($arr, 0, 3)。
@@ -69,7 +69,7 @@ sub = nums[:3]  # 结果 [0, 1, 2]
 #    - 应该用 `itertools.islice` (迭代器) 来做零拷贝遍历。
 ```
 
-#### 8. 🚀 进阶：序列解包 (Unpacking)
+#### 4. 🚀 进阶：序列解包 (Unpacking)
 
 **场景**：把数组的前几个元素赋值给变量。  
 **PHP思维**：list($a, $b) = $arr; 或者 $a = $arr[0];
@@ -94,4 +94,84 @@ user_id, name, is_active, *meta = row
 # 2. 架构思维：
 #    - 这在处理 CSV 行解析或数据库返回结果时非常优雅。
 #    - 比写 `user_id = row[0]; name = row[1]` 少了多次 opcode 查找。
+```
+
+#### 5. 🐢 较慢：线性查找 (Linear Search)
+
+**场景**：判断一个值是否存在于列表中。  
+**PHP思维**：in_array($val, $arr)。
+```python
+users = [101, 102, 103, ... , 99999]
+target = 50000
+
+# 🐢 较慢 (Slow) - O(N)
+exists = target in users
+
+# 💡 源码级剖析 (Source Code Analysis)
+# --------------------------------------------------------------------
+# 1. 迭代比较 (Sequential Scan):
+#    - CPython 执行 `PySequence_Contains`。
+#    - 它是一个 `for` 循环：从 `ob_item[0]` 开始，逐个拿出对象。
+#    - 对每个对象调用 `PyObject_RichCompareBool(item, target, Py_EQ)`。
+#    - 这相当于调用了对象的 `__eq__` 方法。
+#
+# 2. 性能陷阱：
+#    - 如果列表有一百万个元素，且目标在最后，它就要做一百万次比较。
+#
+# 3. 架构优化 (#面试Tips):
+#    - 如果你需要频繁查找，**必须**把 List 转为 Set (`set(users)`)。
+#    - Set 底层是哈希表，查找是 O(1)。
+#    - PHP 的数组自带哈希索引，所以 `$arr['key']` 很快，但 `in_array` 也是 O(N)。
+```
+
+#### 6. 🚀 推荐：二分查找 (Binary Search)
+
+**场景**：在一个**有序**的列表中查找位置。  
+**PHP思维**：很少有人手动写二分查找，通常依赖数据库查询。
+```python
+import bisect
+scores = [60, 70, 80, 90, 95] # 必须是有序的
+
+# 🚀 推荐 (Fast/Pythonic) - O(log N)
+# 动作：查找 75 应该插入的位置，或者判断是否存在
+idx = bisect.bisect_left(scores, 75) 
+# 结果 idx = 2 (70 和 80 之间)
+
+# 💡 源码级剖析 (Source Code Analysis)
+# --------------------------------------------------------------------
+# 1. C 模块实现:
+#    - `bisect` 模块完全由 C 语言编写。
+#    - 它避免了在 Python 层面写 `while low <= high` 的循环开销。
+#    - 它直接在 C 指针数组上进行二分跳跃。
+#
+# 2. 适用性：
+#    - 只适用于**已排序**的列表。
+#    - 这是 List 这种连续内存结构的优势（随机访问 O(1) 配合二分查找）。
+```
+
+#### 7. 🚀 进阶：步长切片 (Stride Slicing)
+
+**场景**：获取列表中所有偶数位索引的元素 (0, 2, 4...)。  
+**PHP思维**：for ($i=0; $i < count($arr); $i+=2).
+```python
+data = ['a', 'b', 'c', 'd', 'e', 'f']
+
+# 🚀 推荐 (Fast/Pythonic)
+evens = data[::2] # ['a', 'c', 'e']
+
+# 🐢 较慢 (Slow) - Python 循环
+# evens = []
+# for i in range(0, len(data), 2):
+#    evens.append(data[i])
+
+# 💡 源码级剖析 (Source Code Analysis)
+# --------------------------------------------------------------------
+# 1. 切片对象 (Slice Object):
+#    - `[::2]` 创建了一个 `slice(0, max, 2)` 对象。
+#
+# 2. 内存动作：
+#    - CPython 预先计算出新列表的大小 (len / 2)。
+#    - `PyList_New` 分配内存。
+#    - 这是一个 C 语言层面的紧凑循环：`src_ptr += step`，然后复制指针。
+#    - 比 Python 解释器里的 for 循环指令快得多。
 ```

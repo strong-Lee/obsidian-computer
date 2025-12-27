@@ -128,3 +128,120 @@ deep_matrix = copy.deepcopy(matrix)
 #    - PHP 的 $b = $a 让你觉得很安全。
 #    - Python 必须时刻警惕：我在操作指针，还是在操作对象？
 ```
+
+#### 5. 🏴‍☠️ 黑客：生成器表达式 (Generator Expression) vs 列表推导
+
+**场景**：你需要处理一个 10GB 的日志文件行，或者一个超大的数字序列。  
+**PHP思维**：yield 在 PHP 中也有，但 PHP 开发者通常习惯把所有数据读进数组 $arr 再处理，直到 Allowed memory size exhausted。
+```python
+# 场景：计算 1 到 1 亿的平方和
+N = 10**8
+
+# 💀 性能杀手 (Killer) - 立即列表化
+# 动作：尝试申请几 GB 内存，甚至触发 OS 的 Swap（虚拟内存交换）。
+# big_list = [x**2 for x in range(N)] 
+
+# 🚀 推荐 (Fast/Pythonic) - 惰性求值
+# 动作：创建一个生成器对象，不分配数组内存。
+gen = (x**2 for x in range(N)) 
+
+# 💡 源码级剖析 (Source Code Analysis)
+# --------------------------------------------------------------------
+# 1. 内存模型 (Memory Layout):
+#    - [x for ...] (List): 
+#      调用 `PyList_New`，随着循环不断 `realloc` 扩容。内存复杂度 O(N)。
+#    - (x for ...) (Gen): 
+#      只分配一个 `PyGenObject` (生成器对象) 和栈帧 (Frame)。
+#      它记录了“代码执行到了哪里”。内存复杂度 O(1)，几百字节而已。
+#
+# 2. 迭代机制 (Next):
+#    - 当你遍历 gen 时，CPython 恢复栈帧，计算下一个值，返回，然后暂停。
+#    - 就像一个“只吐出一个数据”的流。
+#
+# 3. 架构权衡：
+#    - 如果你需要随机访问 (access by index)，必须用 List。
+#    - 如果你只需要从头到尾读一次 (One-pass scan)，必须用 Generator。
+```
+
+#### 6. 🚀 进阶：解包合并 (Star Unpacking)
+
+**场景**：合并两个列表。  
+**PHP思维**：array_merge($a, $b)。
+```python
+list_a = [1, 2, 3]
+list_b = [4, 5, 6]
+
+# 🚀 推荐 (Fast/Pythonic)
+combined = [*list_a, *list_b]
+
+# 🐢 较慢 (Slow) - 传统加法
+# combined = list_a + list_b 
+
+# 💡 源码级剖析 (Source Code Analysis)
+# --------------------------------------------------------------------
+# 1. 操作码 (Opcode): `BUILD_LIST_UNPACK`
+#    - `+` 号操作符 (BINARY_ADD) 会触发 `list_concat`。它通常需要创建新对象。
+#    - `[*a, *b]` 语法糖在较新版本的 Python (3.5+) 中进行了优化。
+#    - 它可以预先计算总长度 (len(a) + len(b))，一次性 `malloc` 足够的内存。
+#    - 然后直接进行两次 `memcpy` (内存拷贝)。
+#
+# 2. 对比 append 循环：
+#    - 绝对不要写 `for x in list_b: list_a.append(x)` 来合并。
+#    - 那会触发 Python 层面的循环和多次潜在的 realloc。
+#    - `[*a, *b]` 是 C 语言层面的批量拷贝。
+```
+
+#### 7. 💀 性能杀手：多维列表的初始化陷阱
+
+**场景**：创建一个 3x3 的矩阵（二维数组）。  
+**PHP思维**：PHP 的数组赋值是 Copy-by-Value，所以 $a = array_fill(0, 3, array_fill(0, 3, 0)) 是安全的。
+```python
+# 💀 性能杀手 (Killer) - 逻辑错误
+# 动作：外层列表包含 3 个指向【同一个】内层列表的指针。
+matrix_bad = [[0] * 3] * 3 
+# matrix_bad[0][0] = 99 
+# 结果：[[99, 0, 0], [99, 0, 0], [99, 0, 0]] -> 全变了！
+
+# 🚀 推荐 (Fast/Pythonic)
+# 动作：利用推导式，每次循环都创建一个【新】的列表对象。
+matrix_good = [[0] * 3 for _ in range(3)]
+
+# 💡 源码级剖析 (Source Code Analysis)
+# --------------------------------------------------------------------
+# 1. 引用机制 (Pointer Reference):
+#    - Python 中的 `*` 复制的是指针 (PyObject*)。
+#    - `list * 3` 也就是把内存里的那个指针地址复制了 3 份。
+#    - 它们指向堆内存中同一个 `PyListObject`。
+#
+# 2. 推导式原理：
+#    - `for _ in range(3)` 会执行 3 次循环体。
+#    - 每次执行 `[0] * 3` 都会调用一次 `PyList_New`，申请一块新内存。
+#    - 所以你得到了 3 个独立的内存块。
+```
+
+####   8. ⚡ 极速：元组 (Tuple) 作为“只读列表”
+
+**场景**：定义一组固定的配置项或常量。  
+**PHP思维**：PHP 没有“不可变数组”的概念（除了 const array，但也还是 array）。
+```python
+# ⚡ 极速 (Instant/Atomic)
+config = ("localhost", 3306, "root")
+
+# 🐢 较慢 (Slow) - 列表
+# config_list = ["localhost", 3306, "root"]
+
+# 💡 源码级剖析 (Source Code Analysis)
+# --------------------------------------------------------------------
+# 1. 结构体差异 (Struct Difference):
+#    - List: `PyListObject` { ob_item, ob_size, allocated }。需要维护 `allocated` 以便扩容。
+#    - Tuple: `PyTupleObject` { ob_item, ob_size }。它是定长的 (VarObject)，没有 `allocated` 字段。
+#
+# 2. 缓存机制 (Free List Cache):
+#    - 这是一个关键的黑客知识点！
+#    - CPython 运行时会缓存被回收的小元组（长度 1~20）。
+#    - 当你创建新元组时，它往往不需要 `malloc`，而是直接从 `free_list` 数组里拿一个旧的结构体复用。
+#    - List 也有 free_list，但 Tuple 的利用率通常更高且开销更小。
+#
+# 3. 哈希能力：
+#    - Tuple 是可哈希的 (Hashable)，可以做字典的 Key。List 不行。
+```

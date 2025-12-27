@@ -43,11 +43,6 @@ print(l) # [[1], [1], [1]] -> 灾难现场
 l = [[] for _ in range(3)] # 正确写法 
 
 
-# 1. 预分配-避免扩容：如果你知道长度，先占位。避免 append 触发多次 realloc（扩容）。
-l = [None] * N
-nums = []; for i in range(10000): nums.append(i); # 慢，触发多次扩容
-nums = [None] * 10000; for i in range(10000): nums[i] = i; # 快，一次性分配
-
 # 2. 引用计数-GC：查看有多少变量引用这个列表。这是python垃圾回收（GC）的基础。注意调用该函数时，参数本身作为临时引用，计数通常会比预想多 1。
 # sys.getrefcount(nums)
 import sys 
