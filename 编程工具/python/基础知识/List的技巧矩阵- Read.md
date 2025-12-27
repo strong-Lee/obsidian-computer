@@ -1,7 +1,7 @@
 #### 1. ⚡ 极速：索引访问 (Indexing)
 
 **场景**：高频访问数组中的第 N 个元素。
-**PHP思维**：$arr[count($arr) - 1] 或者 end($$arr[3] - PHP 数组本质是哈希表(Ordered Map)，即使是数字索引，底层也可能涉及 Bucket 查找(除非是 Packed Array)
+**PHP思维**：$arr[3] - PHP 数组本质是哈希表(Ordered Map)，即使是数字索引，底层也可能涉及 Bucket 查找(除非是 Packed Array)
 
 ```python
 data = ['a', 'b', 'c', 'd', 'e']
