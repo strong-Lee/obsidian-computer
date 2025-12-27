@@ -1,13 +1,5 @@
 
 ```python
-1. 创建列表： 看似简单，实则分配了定长指针数组
-# 动作：CPython 调用 PyList_New(3)。 
-# 原理：分配 PyListObject 结构体 + 3个 PyObject* 指针的连续空间。 
-# 复杂度：O(N)。
-# PHP： $a = []; (底层初始化哈希表)
-data = [1, 2, 3]
-# 快速构建-内存初始化：Python 会申请一块能装100个指针的内存，并将它们都指向同一个整数对象 0 的地址（引用拷贝）。极快，O(n)。
-data = [0] * 100
 
 2. 尾部追加： 最推荐的操作# 动作：检查 allocated > ob_size? 是：直接填入。否：realloc 扩容。 
 # 原理：Amortized O(1) (均摊O(1))。虽然偶尔扩容慢，但平均极快。
@@ -79,9 +71,6 @@ data.reverse()
 data.sort() 
 
 
-# 负数索引-语法糖：CPython 内部处理逻辑为 index = len + index。如果相加后仍为负，则抛出 IndexError。O(1)。
-l = ["a", "b", "c"] 
-print(l[-1]) # 等价于 l[len(l) - 1] -> l[2]
 
 # 判空- PEP8规范：直接检查 C 结构体中的 ob_size 是否为 0，比 if len(nums) == 0 少了一次函数调用。
 if not nums:

@@ -1,29 +1,5 @@
 
 ```python
-1. 列表推导式-字节码优化：
-# 比 for 循环快，因为推导式在编译层级有专门的指令（LIST_APPEND），是在 C 语言层面循环，减少了 Python 虚拟机栈帧压栈/出栈的开销。
-# 动作：C 语言层面直接构建列表，减少了 LOAD_ATTR (append) 的字节码查找开销。 
-# 原理：LIST_APPEND 字节码指令比方法调用更底层。 
-# 复杂度：O(N)。
-# 慢写法：res = []; for i in range(10): res.append(i*2) 
-res = [i * 2 for i in range(10)] 
-[x*2 for x in nums]
-[x for x in nums if x > 0]    # 结合了 filter 和 map 功能，高度优化的构建过程。
-[x**2 for x in range(10) if x % 2 == 0]
-
-2. 切片复制-深浅拷贝：
-# 申请新内存块，将原列表的`对象指针`复制过去。不复制对象本身。O(n)。如果列表中包含可变对象（如子列表），修改子列表会影响原列表。必须用 copy.deepcopy。
-# 动作：申请新 PyListObject，malloc 新指针数组，将原列表对应范围的 指针 复制过去。 
-# 原理：引用计数增加，但不复制对象本身！ 
-# 复杂度：O(K)，K为切片长度。
-sub = data[1:3] # 浅拷贝
-import copy 
-l1 = [[1], 2] 
-l2 = l1[:] # 浅拷贝 
-l3 = copy.deepcopy(l1) # 深拷贝
-l2[0][0] = 999 
-print(l1) # [[999], 2] -> 原列表被改了！ 
-print(l3) # [[1], 2] -> 深拷贝不受影响
 
 3. 步长切片-反转技巧：
 # 创建一个新列表，按步长 -1 读取原列表指针并填入。O(n)。这是生成新列表，而 nums.reverse() 是原地反转。
