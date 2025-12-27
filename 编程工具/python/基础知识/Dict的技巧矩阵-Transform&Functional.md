@@ -198,13 +198,10 @@ output_bytes = orjson.dumps(data)
 
 #### [Tips 6] 自定义序列化 (Custom Encoder)
 
-**场景：字典里有 datetime 对象，json.dumps 报错。
+**场景**：字典里有 datetime 对象，json.dumps 报错。
+**PHP思维**：PHP `json_encode` 并不自动处理 DateTime 对象（除非实现了 `JsonSerializable` 接口），通常转字符串。
 
-# PHP思维：PHP json_encode 并不自动处理 DateTime 对象（除非实现了 JsonSerializable 接口），通常转字符串。
-
-codePython
-
-```
+```python
 import json
 from datetime import datetime
 
